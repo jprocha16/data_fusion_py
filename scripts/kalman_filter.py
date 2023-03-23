@@ -38,19 +38,19 @@ class FusionNode:
 
         # Initialize the main Kalman filter
         self.kf = KalmanFilter(dim_x=3, dim_z=3, dim_u=3)
-        self.kf.x = np.array([[0], [0], [0]])  # todo: primeira estimativa deverá ler os valores de posição atuais da aeronave
-        self.kf.F = np.eye(3)
+        self.kf.x = np.array([[0], [0], [0]])
         self.kf.H = np.eye(3)
         self.kf.P *= 1
 
-        self.kf.Q = np.array([[0.0000001, 0, 0],
-                              [0, 0.0000001, 0],
-                              [0, 0, 0.0000001]])
+        self.kf.Q = np.array([[0.001, 0, 0],
+                              [0, 0.001, 0],
+                              [0, 0, 0.001]])
 
         self.kf.B = np.array([[1 / rate, 0, 0],
                               [0, 1 / rate, 0],
                               [0, 0, 1 / rate]])
 
+        # Init velocity inputs
         self.kf.u = np.array([[0], [0], [0]])
 
     def px4_position_cb(self, msg):
@@ -58,9 +58,9 @@ class FusionNode:
                                       [msg.pose.position.y],
                                       [msg.pose.position.z]])
 
-        self.kf.R = np.array([[0.0001, 0, 0],
-                              [0, 0.0001, 0],
-                              [0, 0, 0.01]])
+        self.kf.R = np.array([[0.01, 0, 0],
+                              [0, 0.01, 0],
+                              [0, 0, 0.1]])
 
         self.kf.update(self.px4_position, self.kf.R, self.kf.H)
 
@@ -78,9 +78,9 @@ class FusionNode:
                                          [msg.y],
                                          [msg.z]])
 
-        self.kf.R = np.array([[1, 0, 0],
-                              [0, 1, 0],
-                              [0, 0, 0.001]])
+        self.kf.R = np.array([[0.5, 0, 0],
+                              [0, 0.5, 0],
+                              [0, 0, 0.01]])
 
         self.kf.update(self.vision_position, self.kf.R, self.kf.H)
 
