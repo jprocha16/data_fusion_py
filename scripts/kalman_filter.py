@@ -42,9 +42,9 @@ class FusionNode:
         self.kf.H = np.eye(3)
         self.kf.P *= 1
 
-        self.kf.Q = np.array([[0.001, 0, 0],
-                              [0, 0.001, 0],
-                              [0, 0, 0.001]])
+        self.kf.Q = np.array([[0.0001, 0, 0],
+                              [0, 0.0001, 0],
+                              [0, 0, 0.0001]])
 
         self.kf.B = np.array([[1 / rate, 0, 0],
                               [0, 1 / rate, 0],
