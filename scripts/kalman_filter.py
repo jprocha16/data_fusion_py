@@ -8,24 +8,18 @@ from geometry_msgs.msg import Point, TwistStamped, PoseStamped
 
 class FusionNode:
     def __init__(self, node_name="kalman_filter", px4_position_topic="/mavros/local_position/pose",
-                 vel_topic="/mavros/local_position/velocity_local", vision_topic="/uav/marker/position",
+                 vel_topic="/mavros/setpoint_velocity/cmd_vel", vision_topic="/uav/marker/corrected_position",
                  fused_pose_topic="/uav/fused_pose"):  # fused_vision_topic='/uav/marker/fused_position'
         rospy.init_node(node_name, anonymous=True)
 
         # Subscribers
-        # Subscrevo 1.velocidades UAV, 2.position dada pela visão e 3.coordenadas dadas pelo PX4
         self.px4_position_sub = rospy.Subscriber(px4_position_topic, PoseStamped, self.px4_position_cb)
         self.px4_velocity_sub = rospy.Subscriber(vel_topic, TwistStamped, self.px4_velocity_cb)
         self.aruco_info_sub = rospy.Subscriber(vision_topic, Point, self.vision_position_cb)
-        # self.imu_vel_sub = rospy.Subscriber("/imu/data", Imu, self.imu_velocity_cb)
-        # self.cmd_vel_sub = rospy.Subscriber("/mavros/setpoint_velocity/cmd_vel", TwistStamped, self.cmd_vel_cb)
 
         # Publishers
         # self.pub = rospy.Publisher(fused_pose_topic, PoseStamped, self.fused_msg, queue_size=10)
         self.fused_pose_pub = rospy.Publisher(fused_pose_topic, PoseStamped, queue_size=10)
-        # Publicar fusão das estimativas de posição com base em visão; apenas para plot -> não deve ser subscrita
-        # pelo controlador
-        # self.fused_vision_pub = rospy.Publisher(fused_vision_topic, Point, queue_size=10)
 
         self.px4_position = None
         self.vision_position = None
@@ -42,9 +36,13 @@ class FusionNode:
         self.kf.H = np.eye(3)
         self.kf.P *= 1
 
-        self.kf.Q = np.array([[0.0001, 0, 0],
-                              [0, 0.0001, 0],
-                              [0, 0, 0.0001]])
+        # self.kf.Q = np.array([[0.0001, 0, 0],
+        #                       [0, 0.0001, 0],
+        #                       [0, 0, 0.0001]])
+
+        self.kf.Q = np.array([[0.01, 0, 0],
+                              [0, 0.01, 0],
+                              [0, 0, 0.01]])
 
         self.kf.B = np.array([[1 / rate, 0, 0],
                               [0, 1 / rate, 0],
@@ -58,9 +56,13 @@ class FusionNode:
                                       [msg.pose.position.y],
                                       [msg.pose.position.z]])
 
-        self.kf.R = np.array([[0.01, 0, 0],
-                              [0, 0.01, 0],
-                              [0, 0, 0.1]])
+        # self.kf.R = np.array([[0.01, 0, 0],
+        #                       [0, 0.01, 0],
+        #                       [0, 0, 0.01]])
+
+        self.kf.R = np.array([[0.25, 0, 0],
+                              [0, 0.25, 0],
+                              [0, 0, 0.25]])
 
         self.kf.update(self.px4_position, self.kf.R, self.kf.H)
 
@@ -78,8 +80,8 @@ class FusionNode:
                                          [msg.y],
                                          [msg.z]])
 
-        self.kf.R = np.array([[0.5, 0, 0],
-                              [0, 0.5, 0],
+        self.kf.R = np.array([[0.01, 0, 0],
+                              [0, 0.01, 0],
                               [0, 0, 0.01]])
 
         self.kf.update(self.vision_position, self.kf.R, self.kf.H)
